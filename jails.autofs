@@ -1,0 +1,2 @@
+/jail  program:/etc/autofs-sftp-jails.sh  --timeout=20
+
