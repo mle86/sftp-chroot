@@ -1,5 +1,7 @@
 #!/bin/sh
 # 
+# This file is part of the sftp-chroot project – https://github.com/mle86/sftp-chroot/
+# 
 # This autofs script will allow any local user's homedir to be mounted
 # under /jail with a mountpoint named like the user, e.g.
 # /jail/xyz      → fake empty directory (root:root 0755)

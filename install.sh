@@ -1,4 +1,6 @@
 #!/bin/sh
+# 
+# This file is the installation script for the sftp-chroot project – https://github.com/mle86/sftp-chroot/
 
 cd "$(dirname -- "$0")"
 

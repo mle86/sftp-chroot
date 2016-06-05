@@ -25,3 +25,11 @@ and append `sshd_config.add` to `/etc/ssh/sshd_config`.
 
 Every operation will ask for manual confirmation ("`y`") first.
 
+
+## Author
+
+Maximilian Eul
+\<maximilian@eul.cc\>
+
+https://github.com/mle86/
+

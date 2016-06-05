@@ -1,2 +1,4 @@
+# This file is part of the sftp-chroot project – https://github.com/mle86/sftp-chroot/
+
 /jail  program:/etc/autofs-sftp-jails.sh  --timeout=20
 
