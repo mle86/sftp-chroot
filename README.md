@@ -27,6 +27,13 @@ and append `sshd_config.add` to `/etc/ssh/sshd_config`.
 Every operation will ask for manual confirmation (`y`) first.
 
 
+## Limitations
+
+Since this solution uses the *internal-sftp* subsystem,
+only SFTP connections are supported,
+but SCP or rsync won't work.
+
+
 ## Author
 
 Maximilian Eul
