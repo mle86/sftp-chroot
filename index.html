@@ -56,7 +56,7 @@ it still comes with a serious restriction:<br>
 <strong>All components of the user's homedir have to be non-world-writable and owned by <code>root</code>.</strong></p>
 
 <p>While /home certainly is root-owned,
-the subdirectories in there are not --
+the subdirectories in there are not,
 and we don't want to force our users to have root-owned homedirs.</p>
 
 <h3>
@@ -68,38 +68,38 @@ sort of like temporary directory hard links.</p>
 <p>For example, this bind mount makes my home directory available at a second location:</p>
 
 <pre><code>$ ls -ld /mnt/
-drwxr-xr-x 2 root root 4,0K Jul 19  2015 /mnt/
-# mount  -o bind  $HOME /mnt
+drwxr-xr-x   2 root root 4,0K Jul 19  2015 /mnt/
+# mount --bind  $HOME /mnt
 $ ls -ld /mnt/
-drwxr-x---+ 77 mle mle 4,0K Jun  2 00:20 /mnt/
+drwxr-x---+ 77 mle  mle  4,0K Jun  2 00:20 /mnt/
 </code></pre>
 
 <p>As can be seen,
-<strong>the secondary location now has the same ownership and access mode as my "real" homedir.</strong>
+<strong>the secondary location now has the same ownership and mode as my "real" homedir.</strong>
 It will last until /mnt get unmounted or the machine reboots.</p>
 
 <h4>
 <a id="security-problems-with-bind-mounts" class="anchor" href="#security-problems-with-bind-mounts" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Security problems with bind mounts</h4>
 
 <p>They also pose a security risk if applied too liberally:<br>
-Usually, settings one's homedir's access mode to <code>0700</code> is sufficient to protect all of its contents.
+Usually, settings one's homedir's mode to <code>0700</code> is sufficient to protect all of its contents.
 Even subdirectories and files with permissive modes like <code>0777</code> are still safe from other users
 simply because nobody can enter that homedir at all.<br>
 <strong>Bind mounts circumvent this!</strong></p>
 
 <p>For example:</p>
 
-<pre><code># ls -la /root/
-drwx------  25 root root 4,0K Jun  2 01:09 ./   # No one can get in here.
-drwxrwxrwx   2 root root 4,0K Jun  2 01:09 secrets/   # Perfectly safe, right?
-# mount -o bind /root/secrets /mnt
+<pre><code># ls -la /root
+drwx------  25 root root 4,0K Jun  2 01:09 /root/   # No one can get in here.
+drwxrwxrwx   2 root root 4,0K Jun  2 01:09 /root/secrets/   # Perfectly safe, right?
+# mount --bind /root/secrets /mnt
 $ ls -ld /mnt
-drwxrwxrwx 2 root root 4,0K Jun  2 01:09 /mnt   # Oops!
+drwxrwxrwx   2 root root 4,0K Jun  2 01:09 /mnt/   # Oops!
 </code></pre>
 
 <p>Because <code>/mnt</code> can be reached by everyone (because <code>/</code> is, of course, unrestricted),
-everybody can now effectively enter <code>/root/secrets/</code> --
-it is no longer protected by <code>/root/</code>'s restrictive access mode.</p>
+everybody can now effectively enter <code>/root/secrets/</code>.
+It is no longer protected by <code>/root/</code>'s restrictive mode.</p>
 
 <p>It is therefore <code>root</code>'s responsibility to be very careful with bind mounts in general,
 because they can be used to circumvent the mode restrictions of nested directories.</p>
@@ -113,7 +113,7 @@ This evades <em>internal-sftp</em>'s restriction that the chroot dir must be <co
 We can duplicate the <code>/home</code> hierarchy for one user inside their new root directory.</p>
 
 <p>We start by creating a base directory <code>/jails</code> for our bind mount points
-which is owned by root and has very restrictive access modes,
+which is owned by root and has very restrictive modes,
 so no one can enter it.
 (This will still work because <em>internal-sftp</em> runs as <code>root</code> prior to chrooting,
 therefore it can enter the /jails directory,
@@ -127,7 +127,7 @@ whereas logged-in non-root users cannot.)</p>
 Its homedir is <code>/home/mle/sub</code>.</p>
 
 <pre><code># mkdir -p /jails/mle-sub/home/mle/sub   # all owned by root
-# mount -o bind  /home/mle/sub  /jails/mle-sub/home/mle/sub
+# mount --bind  /home/mle/sub  /jails/mle-sub/home/mle/sub
 </code></pre>
 
 <p>The chroot dir <code>/jails/mle-sub</code> is owned by root, so <em>internal-sftp</em> will accept it.
@@ -153,15 +153,15 @@ are to be chrooted and can only ever use sftp:</p>
 <p>Now if the user <code>mle-sub</code> establishes a sftp connection,
 <em>internal-sftp</em> will first chroot the session to <code>/jails/mle-sub</code>,
 which works because those directories both belong to root.<br>
-As usual, it will then try to change into the user's homedir --
+As usual, it will then try to change into the user's homedir,
 which is <code>/home/mle/sub</code>.
 Inside the chroot jail, that directory exists too, so the directory change succeeds.
 <code>home</code> and <code>home/mle</code> are only empty, non-writable directories inside the jail,
 so the user cannot do any harm there,
 while <code>home/mle/sub</code> is a bind link to the <em>real</em> homedir.</p>
 
-<p>The user ends up with an sftp session inside their own home directory --
-or at least inside a directory which seems to have the exact same path, correct permissions, and correct ownership.
+<p>The user ends up with an sftp session inside their own home directory –
+or at least inside a directory which seems to have the exact same path, mode, owner, and contents.
 Escaping that homedir with <code>cd ..</code> will only land them in an empty, non-writable directory,
 not in the real <code>/home/mle</code>.</p>
 
@@ -176,7 +176,7 @@ not in the real <code>/home/mle</code>.</p>
 <li>Replicate their homedir structure inside <em>/jails</em><br>
 (<code># mkdir -p /jails/$username/$homedir</code>)</li>
 <li>Bind mount their homedir to the fake homedir inside the jail<br>
-(<code># mount -o bind $homedir /jails/$username/$homedir</code>)</li>
+(<code># mount --bind $homedir /jails/$username/$homedir</code>)</li>
 </ol>
 
 <p>And of course, we'd have to do this after every reboot, because bind mounts are not durable.</p>
@@ -213,7 +213,7 @@ we know that the <em>autofs-jails.sh</em> script will receive <strong>the userna
 <p>With that, the script performs several security checks first:</p>
 
 <ol>
-<li>Making sure that <code>/jails</code> belongs to root and has a restrictive access mode (<code>0700</code>),
+<li>Making sure that <code>/jails</code> belongs to root and has a restrictive mode (<code>0700</code>),
 so that no one can go there to circumvent homedir access restrictions.</li>
 <li>Making sure that the <code>$1</code> username actually exists and has an existing homedir.</li>
 <li>Making sure that the user's homedir is actually a directory, <strong>not a symlink</strong>,
@@ -223,22 +223,21 @@ or autofs will happily create a bind link to the link target (!).</li>
 <p>If everything looks good,
 the script echoes a configuration line for the <em>automount</em> daemon like this:</p>
 
-<pre><code>echo "-fstype=bind  /\"$homedir\" :\"$homedir\""
+<pre><code>echo "-fstype=bind  \"/$homedir\" \":$homedir\""
 </code></pre>
 
 <p>Let's break that down:</p>
 
 <ol>
 <li>
-<code>-fstype=bind</code> -- pretty self-explanatory.
-<em>automount</em>'s default filesystem is... NFS! We wouldn't want <em>that.</em>
-</li>
+<code>-fstype=bind</code> – pretty self-explanatory.
+(<em>automount</em>'s default filesystem is NFS.)</li>
 <li>
-<code>/"$homedir"</code> -- this tells <em>automount</em> which mount point to create.
+<code>"/$homedir"</code> – this tells <em>automount</em> which mount point to create/use.
 It is relative to the non-existing directory which triggered the script,
 so it'll be expanded to <code>/jails/$username/$homedir</code>.</li>
 <li>
-<code>:"$homedir"</code> -- this tells <em>automount</em> where to find the bind mount target.</li>
+<code>":$homedir"</code> – this tells <em>automount</em> where to find the mount target.</li>
 </ol>
 
 <p>Effectively, this means that as soon as the <code>mle-sub</code> user logs in via sftp,
@@ -246,7 +245,7 @@ so it'll be expanded to <code>/jails/$username/$homedir</code>.</li>
 This directory does not yet exist, triggering the <em>automount</em> daemon,
 which will then create a bind mount
 at <code>/jails/mle-sub/home/mle/sub</code> leading to the real <code>/home/mle/sub</code>.<br>
-(The intermediary path components are automagically created, belonging to root with an access mode of <code>0755</code>, so thankfully our script won't have to do that -- which would be a real hassle, because the <em>autofs</em> kernel module does not like manual alterations in its directory.)<br>
+(The intermediary path components are automagically created, belonging to root with a mode of <code>0755</code>, so thankfully our script won't have to do that.)
 The sftp user will end up in <code>/jails/mle-sub/home/mle/sub</code>
 which to them looks and feels like the real <code>/home/mle/sub</code>
 yet is completely isolated from the rest of the <code>/home/mle</code> tree.</p>
