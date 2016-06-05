@@ -9,8 +9,9 @@ and **automount**(8).
 ## Project page
 
 See
-[**mle86.github.io/sftp-chroot**](https://mle86.github.io/sftp-chroot/)
-for more information!
+[**mle86.github.io/sftp-chroot**](http://mle86.github.io/sftp-chroot/)
+for more information
+on how this project was built.
 
 
 ## Installation
@@ -23,7 +24,7 @@ copy `jails.autofs` to `/etc/auto.master.d/`,
 create a new `sftp` user group,  
 and append `sshd_config.add` to `/etc/ssh/sshd_config`.
 
-Every operation will ask for manual confirmation ("`y`") first.
+Every operation will ask for manual confirmation (`y`) first.
 
 
 ## Author
