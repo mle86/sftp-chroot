@@ -66,6 +66,11 @@ if is_yes; then
 	cp -vi -- "$jailmount_script" "$jailmount_dest"
 fi
 
+ask "Create user group $new_group? [Y/n]" 'y'
+if is_yes; then
+	groupadd --force --system -- "$new_group"
+fi
+
 ask "Append $sshd_append to $sshd_appendto? [Y/n]" 'y'
 if is_yes; then
 	[ -s "$sshd_appendto" ] || fail 2 "$sshd_appendto does not exist or is empty!"
