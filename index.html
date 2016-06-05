@@ -20,7 +20,7 @@
 
     <section class="main-content">
       <p>This project aims to provide a working solution
-for homedir-chrooted sftp
+for homedir-chrooted SFTP
 using the openssh-server's <strong>internal-sftp</strong> subsystem
 and <strong>automount</strong>(8).</p>
 
@@ -67,16 +67,17 @@ sort of like temporary directory hard links.</p>
 
 <p>For example, this bind mount makes my home directory available at a second location:</p>
 
-<pre><code>$ ls -ld /mnt/
+<pre><code>$ ls -ld /mnt
 drwxr-xr-x   2 root root 4,0K Jul 19  2015 /mnt/
 # mount --bind  $HOME /mnt
-$ ls -ld /mnt/
+$ ls -ld /mnt
 drwxr-x---+ 77 mle  mle  4,0K Jun  2 00:20 /mnt/
 </code></pre>
 
 <p>As can be seen,
 <strong>the secondary location now has the same ownership and mode as my "real" homedir.</strong>
-It will last until /mnt get unmounted or the machine reboots.</p>
+Those two directories are now equal in every way.
+It will last until /mnt gets unmounted or the machine reboots.</p>
 
 <h4>
 <a id="security-problems-with-bind-mounts" class="anchor" href="#security-problems-with-bind-mounts" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Security problems with bind mounts</h4>
@@ -112,25 +113,25 @@ we can create bind mounts from sub-account homedirs.
 This evades <em>internal-sftp</em>'s restriction that the chroot dir must be <code>root</code>-owned:
 We can duplicate the <code>/home</code> hierarchy for one user inside their new root directory.</p>
 
-<p>We start by creating a base directory <code>/jails</code> for our bind mount points
+<p>We start by creating a base directory <code>/jail</code> for our bind mount points
 which is owned by root and has very restrictive modes,
 so no one can enter it.
 (This will still work because <em>internal-sftp</em> runs as <code>root</code> prior to chrooting,
-therefore it can enter the /jails directory,
+therefore it can enter the /jail directory,
 whereas logged-in non-root users cannot.)</p>
 
-<pre><code># mkdir /jails
-# chmod 0700 /jails
+<pre><code># mkdir /jail
+# chmod 0700 /jail
 </code></pre>
 
 <p>Now assume we want to allow chrooted sftp-logins for the <code>mle-sub</code> user.
 Its homedir is <code>/home/mle/sub</code>.</p>
 
-<pre><code># mkdir -p /jails/mle-sub/home/mle/sub   # all owned by root
-# mount --bind  /home/mle/sub  /jails/mle-sub/home/mle/sub
+<pre><code># mkdir -p /jail/mle-sub/home/mle/sub   # all owned by root
+# mount --bind  /home/mle/sub  /jail/mle-sub/home/mle/sub
 </code></pre>
 
-<p>The chroot dir <code>/jails/mle-sub</code> is owned by root, so <em>internal-sftp</em> will accept it.
+<p>The chroot dir <code>/jail/mle-sub</code> is owned by root, so <em>internal-sftp</em> will accept it.
 Inside it, there is the user's homedir tree, and nothing else.
 The homedir is linked with the <em>real</em> homedir,
 so it has the same permissions, ownership, and of course content.</p>
@@ -143,7 +144,7 @@ tells <em>sshd</em> that all members of the <code>sftp</code> group
 are to be chrooted and can only ever use sftp:</p>
 
 <pre><code>Match group sftp
-    ChrootDirectory /jails/%u   # sftp will replace %u with the username.
+    ChrootDirectory /jail/%u   # sftp will replace %u with the username.
     ForceCommand internal-sftp
 </code></pre>
 
@@ -151,7 +152,7 @@ are to be chrooted and can only ever use sftp:</p>
 <a id="so-far-so-good" class="anchor" href="#so-far-so-good" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>So far so good</h3>
 
 <p>Now if the user <code>mle-sub</code> establishes a sftp connection,
-<em>internal-sftp</em> will first chroot the session to <code>/jails/mle-sub</code>,
+<em>internal-sftp</em> will first chroot the session to <code>/jail/mle-sub</code>,
 which works because those directories both belong to root.<br>
 As usual, it will then try to change into the user's homedir,
 which is <code>/home/mle/sub</code>.
@@ -173,10 +174,10 @@ not in the real <code>/home/mle</code>.</p>
 <p>To enable sftp logins for all <code>sftp</code> group members, we'd have to do this for every one of them:</p>
 
 <ol>
-<li>Replicate their homedir structure inside <em>/jails</em><br>
-(<code># mkdir -p /jails/$username/$homedir</code>)</li>
+<li>Replicate their homedir structure inside <em>/jail</em><br>
+(<code># mkdir -p /jail/$username/$homedir</code>)</li>
 <li>Bind mount their homedir to the fake homedir inside the jail<br>
-(<code># mount --bind $homedir /jails/$username/$homedir</code>)</li>
+(<code># mount --bind $homedir /jail/$username/$homedir</code>)</li>
 </ol>
 
 <p>And of course, we'd have to do this after every reboot, because bind mounts are not durable.</p>
@@ -197,23 +198,23 @@ Its configuration files can be placed in <code>/etc/auto.master.d/</code> (which
 <p>We'll add our own configuration there:</p>
 
 <pre><code>$ cat /etc/auto.master.d/jails.autofs
-/jails program:/etc/autofs-jails.sh --timeout=20
+/jail program:/etc/autofs-jails.sh --timeout=20
 </code></pre>
 
 <p>This oneliner basically says that
-whenever someone tries to enter a non-existing directory in <code>/jails/</code>,
+whenever someone tries to enter a non-existing directory in <code>/jail/</code>,
 <em>automount</em> should call the <em>autofs-jails.sh</em> script
 which should then determine where to mount that directory from.</p>
 
 <p>The <em>autofs-jails.sh</em> receives the non-existing relative directory as its first argument.
-Since only <em>internal-sftp</em> will ever enter <code>/jails</code>
-and we configured it to chroot to <code>/jails/%u</code>,
+Since only <em>internal-sftp</em> will ever enter <code>/jail</code>
+and we configured it to chroot to <code>/jail/%u</code>,
 we know that the <em>autofs-jails.sh</em> script will receive <strong>the username of the sftp user</strong> as its first argument.</p>
 
 <p>With that, the script performs several security checks first:</p>
 
 <ol>
-<li>Making sure that <code>/jails</code> belongs to root and has a restrictive mode (<code>0700</code>),
+<li>Making sure that <code>/jail</code> belongs to root and has a restrictive mode (<code>0700</code>),
 so that no one can go there to circumvent homedir access restrictions.</li>
 <li>Making sure that the <code>$1</code> username actually exists and has an existing homedir.</li>
 <li>Making sure that the user's homedir is actually a directory, <strong>not a symlink</strong>,
@@ -235,18 +236,18 @@ the script echoes a configuration line for the <em>automount</em> daemon like th
 <li>
 <code>"/$homedir"</code> – this tells <em>automount</em> which mount point to create/use.
 It is relative to the non-existing directory which triggered the script,
-so it'll be expanded to <code>/jails/$username/$homedir</code>.</li>
+so it'll be expanded to <code>/jail/$username/$homedir</code>.</li>
 <li>
 <code>":$homedir"</code> – this tells <em>automount</em> where to find the mount target.</li>
 </ol>
 
 <p>Effectively, this means that as soon as the <code>mle-sub</code> user logs in via sftp,
-<em>internal-sftp</em> will chroot them to <code>/jails/mle-sub</code>.
+<em>internal-sftp</em> will chroot them to <code>/jail/mle-sub</code>.
 This directory does not yet exist, triggering the <em>automount</em> daemon,
 which will then create a bind mount
-at <code>/jails/mle-sub/home/mle/sub</code> leading to the real <code>/home/mle/sub</code>.<br>
+at <code>/jail/mle-sub/home/mle/sub</code> leading to the real <code>/home/mle/sub</code>.<br>
 (The intermediary path components are automagically created, belonging to root with a mode of <code>0755</code>, so thankfully our script won't have to do that.)
-The sftp user will end up in <code>/jails/mle-sub/home/mle/sub</code>
+The sftp user will end up in <code>/jail/mle-sub/home/mle/sub</code>
 which to them looks and feels like the real <code>/home/mle/sub</code>
 yet is completely isolated from the rest of the <code>/home/mle</code> tree.</p>
 
