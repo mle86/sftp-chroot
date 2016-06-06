@@ -39,9 +39,8 @@ and system directories.</p></li>
 (see below for an example).</p></li>
 <li><p>Minimal configuration –
 the installation should set up everything by itself.</p></li>
-<li><p>No operational overhead –
-there hould be no need for any changes in adding users, for example,
-just the new user group.</p></li>
+<li><p>No administrative overhead –
+there should be no need, say, to change the way how users are added to the system.</p></li>
 <li><p>Have consistent path names:
 The <code>pwd</code> SFTP command should still show the real homedir path.</p></li>
 </ul>
@@ -55,10 +54,10 @@ this solution supports:</p>
 <ul>
 <li><p>Main account <code>uid=1000(mle) gid=1000(mle) groups=(1000)mle,(500)sftp</code><br>
 with homedir <code>/home/mle</code><br>
-should be able to access /home/mle via sftp, including all sub-directories.</p></li>
+should be able to access /home/mle via SFTP, including all sub-directories.</p></li>
 <li><p>Sub account <code>uid=1001(mle-sub) gid=1000(mle) groups=(1000)mle,(500)sftp</code><br>
 with homedir <code>/home/mle/sub</code><br>
-should be able to access /home/mle/sub via sftp, but NOT the rest of /home/mle.</p></li>
+should be able to access /home/mle/sub via SFTP, but NOT the rest of /home/mle.</p></li>
 <li><p>Those accounts should be the owners of their respective homedirs.</p></li>
 </ul>
 
@@ -76,7 +75,7 @@ The chroot dir has to be owned by <code>root</code>.</p>
 
 <p>We don't want to force our users to have root-owned homedirs.
 That means that an <em>sshd_config</em> directive like <code>ChrootDirectory %h</code> won't work.
-(Also, the resulting directory hierarchy would look weird to the sftp users:
+(Also, the resulting directory hierarchy would look weird to the SFTP users:
  their homedir would appear to be located at <code>/</code>.)</p>
 
 <p>We'll have to build an additional hierarchy for every user:<br>
@@ -170,17 +169,17 @@ so it really has the same permissions, ownership, and of course content.</p>
 
 <p>Appending this block to <code>/etc/ssh/sshd_config</code>
 tells <em>sshd</em> that all members of the <code>sftp</code> group
-are to be chrooted and can only ever use sftp:</p>
+are to be chrooted and can only ever use SFTP:</p>
 
 <pre><code>Match group sftp
-    ChrootDirectory /jail/%u   # sftp will replace %u with the username.
+    ChrootDirectory /jail/%u   # sshd will replace %u with the username.
     ForceCommand internal-sftp
 </code></pre>
 
 <h2>
 <a id="so-far-so-good" class="anchor" href="#so-far-so-good" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>So far so good</h2>
 
-<p>Now if the user <code>mle-sub</code> establishes a sftp connection,
+<p>Now w the user <code>mle-sub</code> establishes a SFTP connection,
 <em>internal-sftp</em> will first chroot the session to <code>/jail/mle-sub</code>,
 which works because those directories both belong to root.<br>
 As usual, it will then try to change into the user's homedir,
@@ -200,7 +199,7 @@ not in the real <code>/home/mle</code>.</p>
 <h2>
 <a id="too-many-mounts" class="anchor" href="#too-many-mounts" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Too many mounts</h2>
 
-<p>To enable SFTP logins for all <code>sftp</code> group members,
+<p>To enable SFTP logins for <em>all</em> <code>sftp</code> group members,
 we'd have to do this for every one of them:</p>
 
 <ol>
@@ -214,7 +213,8 @@ we'd have to do this for every one of them:</p>
 
 <p>We could enter all of them into our <code>/etc/fstab</code>,
 but after a few dozen sub-accounts
-both that file and <code>mtab</code> would get quite cluttered.</p>
+both that file and <code>mtab</code> would get quite cluttered.
+Apart from that, it would necessitate changes to <code>/etc/fstab</code> every time a <code>sftp</code> user gets added, deleted, or has their homedir changed.</p>
 
 <p>What if the system could automatically create and mount those directories when needed,
 unmounting and removing them again after the SFTP session ended?</p>
