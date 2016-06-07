@@ -14,19 +14,6 @@ for more information
 on how this project was built.
 
 
-## Installation
-
-Run the `install.sh` script as root.
-
-It will install autofs,  
-copy `autofs-sftp-jails.sh` to `/etc/`,  
-copy `jails.autofs` to `/etc/auto.master.d/`,  
-create a new `sftp` user group,  
-and append `sshd_config.add` to `/etc/ssh/sshd_config`.
-
-Every operation will ask for manual confirmation (`y`) first.
-
-
 ## Features
 
 * Simple installation script
@@ -43,6 +30,20 @@ Every operation will ask for manual confirmation (`y`) first.
 Since this solution uses the *internal-sftp* subsystem,
 only SFTP connections are supported,
 but SCP or rsync won't work.
+
+
+## Installation
+
+Run *sudo install.sh*.
+What it'll do:
+
+* `apt-get install autofs`,
+* copy `autofs-sftp-jails.sh` to `/etc/`,
+* copy `jails.autofs` to `/etc/auto.master.d/`,
+* create a new `sftp` user group,
+* append `sshd_config.add` to `/etc/ssh/sshd_config`.
+
+Every operation will ask for manual confirmation (`y`) first.
 
 
 ## Author
