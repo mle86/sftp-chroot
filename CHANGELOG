@@ -1,6 +1,7 @@
 v1.0.1 (June 2016)
 	- fixed sshd_config
 	- improved readme doc
+	- improved install.sh output
 
 v1.0 (June 2016)
 
