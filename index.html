@@ -51,12 +51,12 @@ commonly seen at shared web hosting providers.
 For example:</p>
 
 <ul>
-<li><p>Main account <code>uid=1000(mle) gid=1000(mle) groups=(1000)mle,(500)sftp</code><br>
+<li>Main account <code>uid=1000(mle) gid=1000(mle) groups=(1000)mle,(500)sftp</code><br>
 with homedir <code>/home/mle</code><br>
-should be able to access /home/mle via SFTP, including all sub-directories.</p></li>
-<li><p>Sub account <code>uid=1001(mle-sub) gid=1000(mle) groups=(1000)mle,(500)sftp</code><br>
+should be able to access /home/mle via SFTP, including all sub-directories.</li>
+<li>Sub account <code>uid=1001(mle-sub) gid=1000(mle) groups=(1000)mle,(500)sftp</code><br>
 with homedir <code>/home/mle/sub</code><br>
-should be able to access /home/mle/sub via SFTP, but <em>not</em> the rest of /home/mle.</p></li>
+should be able to access /home/mle/sub via SFTP, but <em>not</em> the rest of /home/mle.</li>
 </ul>
 
 <p>If those two accounts both have a umask of <code>002</code>,
@@ -75,7 +75,7 @@ While effective, this approach has distinct disadvantages:</p>
 (This is also the case with most FTP daemons.)</li>
 </ul>
 
-<p>This project presents a solution which avoids those problem.</p>
+<p>This project presents a solution which avoids those problems.</p>
 
 <h2>
 <a id="goals" class="anchor" href="#goals" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Goals</h2>
