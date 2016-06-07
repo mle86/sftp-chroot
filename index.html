@@ -1,28 +1,81 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html>
   <head>
-    <meta charset="UTF-8">
-    <title>sftp-chroot by mle86</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
-  </head>
-  <body>
-    <section class="page-header">
-      <h1 class="project-name">sftp-chroot</h1>
-      <h2 class="project-tagline">Working home-chrooted sftp</h2>
-      <a href="https://github.com/mle86/sftp-chroot" class="btn">View on GitHub</a>
-      <a href="https://github.com/mle86/sftp-chroot/zipball/master" class="btn">Download .zip</a>
-      <a href="https://github.com/mle86/sftp-chroot/tarball/master" class="btn">Download .tar.gz</a>
-    </section>
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
 
-    <section class="main-content">
-      <p>This project aims to provide a working solution
-for homedir-chrooted SFTP
-using the openssh-server's <strong>internal-sftp</strong> subsystem
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>sftp-chroot by mle86</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>sftp-chroot</h1>
+        <h2>Working homedir-jailed SFTP</h2>
+        <a href="https://github.com/mle86/sftp-chroot" class="button"><small>View project on</small> GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <p>This project aims to provide a working solution
+for home directory-jailed SFTP
+using OpenSSH-server's <strong>internal-sftp</strong> subsystem
 and <strong>automount</strong>(8).</p>
+
+<h2>
+<a id="motivation" class="anchor" href="#motivation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Motivation</h2>
+
+<p>FTP daemons like ProFTPd can <strong>restrict users to their home directories</strong>
+(and do so by default).
+This is often desirable for shared systems.</p>
+
+<p>SSH daemons like the OpenSSH Server lack that feature.
+While it is easy to only enable the SFTP facilities for certain users
+(by adding <code>ForceCommand internal-sftp</code> to the <em>sshd_config</em> file, for example),
+those users will still be able to traverse the entire file system,
+making it necessary for other users to pay close attention to their homedir modes.</p>
+
+<p>Another problem is that the system might have <em>sub accounts</em> with a <em>User Private Groups</em> scheme,
+commonly seen at shared web hosting providers.
+For example:</p>
+
+<ul>
+<li><p>Main account <code>uid=1000(mle) gid=1000(mle) groups=(1000)mle,(500)sftp</code><br>
+with homedir <code>/home/mle</code><br>
+should be able to access /home/mle via SFTP, including all sub-directories.</p></li>
+<li><p>Sub account <code>uid=1001(mle-sub) gid=1000(mle) groups=(1000)mle,(500)sftp</code><br>
+with homedir <code>/home/mle/sub</code><br>
+should be able to access /home/mle/sub via SFTP, but <em>not</em> the rest of /home/mle.</p></li>
+</ul>
+
+<p>If those two accounts both have a umask of <code>002</code>,
+then the main account can access the sub account's files and directories.
+The sub account however should be <strong>prevented from leaving their own homedir</strong>
+while using SFTP, just like with FTP.</p>
+
+<p>Existing solutions often advise administrators to have root-owned home directories only
+and have the SSH daemon use the <strong>chroot</strong>(2) system call
+to lock users into their home directories.
+While effective, this approach has distinct disadvantages:</p>
+
+<ul>
+<li>Users can no longer change their home directory mode.</li>
+<li>Users will see their own home directory as <code>/</code>.<br>
+(This is also the case with most FTP daemons.)</li>
+</ul>
+
+<p>This project presents a solution which avoids those problem.</p>
 
 <h2>
 <a id="goals" class="anchor" href="#goals" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Goals</h2>
@@ -31,39 +84,21 @@ and <strong>automount</strong>(8).</p>
 <li><p>Have an <strong><code>sftp</code> user group</strong>
 which allows SFTP logins to its members
 but prevents them from using regular SSH.</p></li>
-<li><p>Force SFTP users to be <strong>chroot</strong>'ed
-into their home directories
+<li><p>Force SFTP users to be
+<strong>locked into their home directories</strong>
 to isolate them from all other homes
 and system directories.</p></li>
-<li><p>Support <strong>sub-accounts</strong> with <em>User Private Groups</em>
-(see below for an example).</p></li>
+<li><p>Support <strong>sub-accounts</strong>
+with nested home directories
+(see above for an example).</p></li>
 <li><p>Minimal configuration –
 the installation should set up everything by itself.</p></li>
 <li><p>No administrative overhead –
-there should be no need, say, to change the way how users are added to the system.</p></li>
-<li><p>Have consistent path names:
-The <code>pwd</code> SFTP command should still show the real homedir path.</p></li>
+there should be no need, say,
+to change the way users are added to the system.</p></li>
+<li><p>Have consistent path names –
+the <code>pwd</code> SFTP command should still show the real homedir path.</p></li>
 </ul>
-
-<h3>
-<a id="sub-accounts" class="anchor" href="#sub-accounts" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sub accounts</h3>
-
-<p>To give an example of the kind of <em>sub accounts</em>
-this solution supports:</p>
-
-<ul>
-<li><p>Main account <code>uid=1000(mle) gid=1000(mle) groups=(1000)mle,(500)sftp</code><br>
-with homedir <code>/home/mle</code><br>
-should be able to access /home/mle via SFTP, including all sub-directories.</p></li>
-<li><p>Sub account <code>uid=1001(mle-sub) gid=1000(mle) groups=(1000)mle,(500)sftp</code><br>
-with homedir <code>/home/mle/sub</code><br>
-should be able to access /home/mle/sub via SFTP, but NOT the rest of /home/mle.</p></li>
-<li><p>Those accounts should be the owners of their respective homedirs.</p></li>
-</ul>
-
-<p>If both accounts have a umask like <code>002</code>,
-then the main account can access the sub account's files and directories.
-The sub account however should be <strong>prevented from leaving their own homedir.</strong></p>
 
 <h2>
 <a id="ownership-problem" class="anchor" href="#ownership-problem" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Ownership problem</h2>
@@ -74,14 +109,15 @@ it still comes with a serious restriction:<br>
 The chroot dir has to be owned by <code>root</code>.</p>
 
 <p>We don't want to force our users to have root-owned homedirs.
-That means that an <em>sshd_config</em> directive like <code>ChrootDirectory %h</code> won't work.
+Therefore, an <em>sshd_config</em> directive like <code>ChrootDirectory %h</code> won't work.
 (Also, the resulting directory hierarchy would look weird to the SFTP users:
  their homedir would appear to be located at <code>/</code>.)</p>
 
 <p>We'll have to build an additional hierarchy for every user:<br>
 A root-owned directory like <code>/jail/USERNAME</code> can be used as one user's chroot filesystem.
-In there, they should find their homedir (and nothing more).
-Symlinks won't work for that (they'd be evaluated <em>inside</em> the chroot filesystem, leading nowhere),
+In there, they should find their homedir (and nothing more).<br>
+Symlinks won't work for that
+(they'd be evaluated <em>inside</em> the chroot filesystem, leading nowhere),
 and not even root is allowed to create directory hardlinks.</p>
 
 <h2>
@@ -94,7 +130,9 @@ sort of like temporary directory hardlinks.</p>
 
 <pre><code>$ ls -ld /mnt
 drwxr-xr-x   2 root root 4,0K Jul 19  2015 /mnt/
+
 # mount --bind  $HOME /mnt
+
 $ ls -ld /mnt
 drwxr-x---+ 77 mle  mle  4,0K Jun  2 00:20 /mnt/
 </code></pre>
@@ -120,12 +158,14 @@ just like hardlinks do!</p>
 <pre><code># ls -la /root
 drwx------  25 root root 4,0K Jun  2 01:09 /root/   # No one can get in here.
 drwxrwxrwx   2 root root 4,0K Jun  2 01:09 /root/secrets/   # Perfectly safe, right?
+
 # mount --bind /root/secrets /mnt
+
 $ ls -ld /mnt
 drwxrwxrwx   2 root root 4,0K Jun  2 01:09 /mnt/   # Oops!
 </code></pre>
 
-<p>Because <code>/mnt</code> can be reached by everyone (because <code>/</code> is, of course, unrestricted),
+<p>Because <code>/mnt</code> can be reached by everyone,
 everybody can now effectively enter <code>/root/secrets/</code>.
 It is no longer protected by <code>/root/</code>'s restrictive mode.</p>
 
@@ -138,7 +178,7 @@ because they can be used to circumvent the mode restrictions of nested directori
 <p>Keeping this problem in mind,
 we can create bind mounts to homedirs
 in root-owned locations.
-This evades <em>internal-sftp</em>'s restriction that the chroot dir must be root-owned:
+This evades <em>sshd</em>'s restriction that the chroot dir must be root-owned:
 We can duplicate the <code>/home</code> hierarchy for one user inside their personal chroot filesystem.</p>
 
 <p>We start by creating a base directory <code>/jail</code> for our bind mount points
@@ -148,19 +188,19 @@ so no one can enter it.
 therefore it can enter the /jail directory,
 whereas logged-in non-root users cannot.)</p>
 
-<pre><code># mkdir  -m 0700  /jail
+<pre><code># mkdir -m 0700  /jail
 </code></pre>
 
-<p>Now assume we want to allow chrooted SFTP logins for the <code>mle-sub</code> user.
+<p>Now assume we want to allow chrooted SFTP logins for the <code>mle-sub</code> user.<br>
 Their homedir is <code>/home/mle/sub</code>.</p>
 
-<pre><code># mkdir -p /jail/mle-sub/home/mle/sub   # all owned by root
+<pre><code># mkdir -p  /jail/mle-sub/home/mle/sub   # all owned by root
 # mount --bind  /home/mle/sub  /jail/mle-sub/home/mle/sub
 </code></pre>
 
 <p>The chroot dir <code>/jail/mle-sub</code> is owned by root,
-therefore <em>internal-sftp</em> will accept it.
-Inside it, there'a a duplicate of the user's homedir and nothing else.
+so the <code>ChrootDirectory</code> directive will accept it.
+Inside it, there's a duplicate of the user's homedir and nothing else.
 That homedir duplicate is linked with the <em>real</em> homedir,
 so it really has the same permissions, ownership, and of course content.</p>
 
@@ -179,12 +219,12 @@ are to be chrooted and can only ever use SFTP:</p>
 <h2>
 <a id="so-far-so-good" class="anchor" href="#so-far-so-good" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>So far so good</h2>
 
-<p>Now w the user <code>mle-sub</code> establishes a SFTP connection,
-<em>internal-sftp</em> will first chroot the session to <code>/jail/mle-sub</code>,
+<p>Now when the user <code>mle-sub</code> establishes a SFTP connection,
+<em>sshd</em> will first chroot the session to <code>/jail/mle-sub</code>,
 which works because those directories both belong to root.<br>
-As usual, it will then try to change into the user's homedir,
+As usual, <em>internal-sftp</em> will then try to change into the user's homedir,
 which is <code>/home/mle/sub</code>.
-Inside the chroot jail, that directory exists too, so the directory change succeeds.
+That directory exists inside the chroot jail as well, so the directory change succeeds.
 <code>home</code> and <code>home/mle</code> are only empty, non-writable directories inside the jail,
 so the user cannot do any harm there,
 while <code>home/mle/sub</code> is a bind link to the <em>real</em> homedir.</p>
@@ -197,9 +237,9 @@ not in the real <code>/home/mle</code>.</p>
 <p>Success!</p>
 
 <h2>
-<a id="too-many-mounts" class="anchor" href="#too-many-mounts" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Too many mounts</h2>
+<a id="too-many-mounts-too-much-work" class="anchor" href="#too-many-mounts-too-much-work" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Too many mounts, too much work</h2>
 
-<p>To enable SFTP logins for <em>all</em> <code>sftp</code> group members,
+<p>To enable SFTP logins like that for <em>all</em> <code>sftp</code> group members,
 we'd have to do this for every one of them:</p>
 
 <ol>
@@ -212,9 +252,10 @@ we'd have to do this for every one of them:</p>
 <p>And of course, we'd have to do this after every reboot, because bind mounts are not durable.</p>
 
 <p>We could enter all of them into our <code>/etc/fstab</code>,
-but after a few dozen sub-accounts
+but after a few dozen entries
 both that file and <code>mtab</code> would get quite cluttered.
-Apart from that, it would necessitate changes to <code>/etc/fstab</code> every time a <code>sftp</code> user gets added, deleted, or has their homedir changed.</p>
+Apart from that, it would necessitate changes to <code>/etc/fstab</code>
+every time a <code>sftp</code> user gets added, deleted, or has their homedir changed.</p>
 
 <p>What if the system could automatically create and mount those directories when needed,
 unmounting and removing them again after the SFTP session ended?</p>
@@ -222,25 +263,47 @@ unmounting and removing them again after the SFTP session ended?</p>
 <h2>
 <a id="enter-autofs" class="anchor" href="#enter-autofs" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Enter autofs</h2>
 
-<p>The <em>autofs</em> package contains the <em>automount(8)</em> daemon and a the <em>autofs4</em> kernel module.
-Its configuration files go in <code>/etc/auto.master.d/</code>
-(which might have to be created first).</p>
+<p>The <em>autofs</em> package contains the <em>automount(8)</em> daemon and the <em>autofs4</em> kernel module.
+It is commonly used to establish NFS network mounts when they are needed,
+automatically unmounting them again if not accessed for some time.</p>
 
-<p>We'll add our own configuration there:</p>
+<p>It can read its directory configuration both from static map files,
+amounting to little more than <em>fstab</em> with automatic network retry and timeouts.
+It can also ask a script for its per-directory configuration
+every time a filesystem access to a missing directory is made.
+(Dynamic mappings like this can be used, for example,
+ to have a zero-configuration "network shares" directory
+ which will automatically connect to smb servers.)</p>
 
-<pre><code>$ cat /etc/auto.master.d/jails.autofs
+<p>We'll use this dynamic mapping scheme
+to automatically mount our jailed home directory links
+when they are needed.</p>
+
+<h3>
+<a id="top-configuration-file" class="anchor" href="#top-configuration-file" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Top configuration file</h3>
+
+<p>The top configuration files go in <code>/etc/auto.master.d/</code>
+(which might have to be created first).
+We'll add our own configuration there:</p>
+
+<pre><code>$ cat &gt; /etc/auto.master.d/jails.autofs
 /jail program:/etc/autofs-sftp-jails.sh --timeout=20
 </code></pre>
 
 <p>This oneliner basically says that
-whenever someone tries to enter a non-existing directory in <code>/jail/</code>,
+whenever someone tries to enter a non-existing directory in <code>/jail</code>,
 <em>automount</em> should call our <em>autofs-sftp-jails.sh</em> script
 which should then determine where to mount that directory from.</p>
 
-<p>The <em>autofs-sftp-jails.sh</em> receives the non-existing relative directory as its first argument.
-(Since only <em>internal-sftp</em> will ever enter <code>/jail</code>
- and we configured it to chroot the users to <code>/jail/%u</code>,
- we know that the <em>autofs-sftp-jails.sh</em> script will always receive <strong>the username of the SFTP user</strong> as its first argument.)</p>
+<h3>
+<a id="the-dynamic-map-script" class="anchor" href="#the-dynamic-map-script" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>The dynamic map script</h3>
+
+<p>The <em>autofs-sftp-jails.sh</em> receives the non-existing relative directory
+as its first argument.
+Since only <em>internal-sftp</em> will ever enter <code>/jail</code>
+and we configured it to chroot the users to <code>/jail/%u</code>,
+we know that the <em>autofs-sftp-jails.sh</em> script
+will always receive <strong>the username of the SFTP user</strong> as its first argument.</p>
 
 <p>With that, the script performs several security checks first:</p>
 
@@ -248,7 +311,7 @@ which should then determine where to mount that directory from.</p>
 <li>Making sure that <code>/jail</code> belongs to root and has a restrictive mode (<code>0700</code>),
 so that no one can go there to circumvent homedir access restrictions.</li>
 <li>Making sure that the <code>$1</code> username actually exists and has an existing homedir.</li>
-<li>Making sure that the user's homedir is actually a directory, <strong>not a symlink</strong>,
+<li>Making sure that the user's homedir is actually a directory, <strong>not a symlink,</strong>
 or autofs will happily create a bind link to the link target (!).</li>
 </ol>
 
@@ -271,23 +334,39 @@ so it'll be expanded to <code>/jail/$username/$homedir</code>.</li>
 <code>":$homedir"</code> – this tells <em>automount</em> where to find the mount target.</li>
 </ol>
 
-<p>Effectively, this means that as soon as the <code>mle-sub</code> user logs in via SFTP,
-<em>internal-sftp</em> will chroot them to <code>/jail/mle-sub</code>.
+<h2>
+<a id="effect" class="anchor" href="#effect" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Effect</h2>
+
+<p>This means that
+as soon as the <code>mle-sub</code> user logs in via SFTP,
+<em>sshd</em> will chroot them to <code>/jail/mle-sub</code>.
 This directory does not yet exist, triggering the <em>automount</em> daemon,
 which will then create a bind mount
-at <code>/jail/mle-sub/home/mle/sub</code> leading to the real <code>/home/mle/sub</code>.<br>
-(The intermediary path components are automagically created, belonging to root with a mode of <code>0755</code>, so thankfully our script won't have to do that.)
-The SFTP user will end up in <code>/jail/mle-sub/home/mle/sub</code>
+at <code>/jail/mle-sub/home/mle/sub</code>
+leading to the real <code>/home/mle/sub</code>.<br>
+(The intermediary path components are automagically created, belonging to root with a mode of <code>0755</code>, so thankfully our script won't have to do that.)</p>
+
+<p>The SFTP user will end up in <code>/jail/mle-sub/home/mle/sub</code>
 which to them looks and feels like the real <code>/home/mle/sub</code>
-yet is completely isolated from the rest of the <code>/home/mle</code> tree.</p>
+yet is completely isolated from the rest of the <code>/home/mle</code> tree!</p>
+        </section>
 
-      <footer class="site-footer">
-        <span class="site-footer-owner"><a href="https://github.com/mle86/sftp-chroot">sftp-chroot</a> is maintained by <a href="https://github.com/mle86">mle86</a>.</span>
+        <aside id="sidebar">
+          <a href="https://github.com/mle86/sftp-chroot/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/mle86/sftp-chroot/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
 
-        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
-      </footer>
+          <p class="repo-owner"><a href="https://github.com/mle86/sftp-chroot"></a> is maintained by <a href="https://github.com/mle86">mle86</a>.</p>
 
-    </section>
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
 
   
   </body>
