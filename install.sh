@@ -20,8 +20,8 @@ new_group='sftp'
 ansi_failure='[1;31m'
 ansi_highlight='[1m'
 ansi_reset='[0m'
-ansi_info='[1;33m'
-ansi_success='[1;32m'
+ansi_info='[1;35m'
+#ansi_success='[1;32m'
 
 fail () {
 	local status=1
@@ -29,8 +29,12 @@ fail () {
 		status="$2"
 		shift
 	fi
-	echo "$ansi_failure""$@""$ansi_reset"  >&2
+	echo "$ansi_failure ""$@""$ansi_reset"  >&2
 	exit $status
+}
+
+info () {
+	echo "$ansi_info ""$@""$ansi_reset"
 }
 
 ask () {
@@ -38,7 +42,7 @@ ask () {
 	local default="${2:-n}"
 
 	ANSWER=
-	read -p " $ansi_highlight$prompt >$ansi_reset " ANSWER  || fail  # eof, exit with newline
+	read -p "$ansi_highlight $prompt >$ansi_reset " ANSWER  || fail  # eof, exit with newline
 	[ -n "$ANSWER" ] || ANSWER="$default"
 
 	true
@@ -74,7 +78,7 @@ if is_yes; then
 	if ! grp="$(getent group -- "$new_group")"; then
 		fail "group not found: $new_group"
 	else
-		echo "${ansi_info} group entry: ${grp}${ansi_reset}"
+		info "group entry: $grp"
 	fi
 fi
 
@@ -83,8 +87,8 @@ if is_yes; then
 	[ -s "$sshd_appendto" ] || fail 2 "$sshd_appendto does not exist or is empty!"
 	cat -- "$sshd_append" >> "$sshd_appendto"
 
-	echo "${ansi_info} If your sshd_config contains an 'AllowGroups' directive,"
-	echo "${ansi_info} don't forget to add the '$new_group' group to it!"
+	info "If your sshd_config contains an 'AllowGroups' directive,"
+	info "don't forget to add the '$new_group' group to it!"
 fi
 
 ask "Prepare empty $MOUNT_TO base dir? [Y/n]" 'y'
