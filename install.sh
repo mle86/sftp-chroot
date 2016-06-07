@@ -71,6 +71,7 @@ fi
 ask "Create user group $new_group? [Y/n]" 'y'
 if is_yes; then
 	groupadd --force --system -- "$new_group"
+	echo "${ansi_info} Group entry: $(getent group -- "$new_group")${ansi_reset}"
 fi
 
 ask "Append $sshd_append to $sshd_appendto? [Y/n]" 'y'
