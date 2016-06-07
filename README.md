@@ -1,8 +1,8 @@
 # sftp-chroot
 
 This project aims to provide a working solution
-for homedir-chrooted SFTP
-using the openssh-server's **internal-sftp** subsystem
+for home directory-jailed SFTP
+using OpenSSH-server's **internal-sftp** subsystem
 and **automount**(8).
 
 
@@ -34,8 +34,8 @@ but SCP or rsync won't work.
 
 ## Installation
 
-Run *sudo install.sh*.
-What it'll do:
+Run `sudo ./install.sh`.
+This is what it will do:
 
 * `apt-get install autofs`,
 * copy `autofs-sftp-jails.sh` to `/etc/`,
@@ -43,7 +43,9 @@ What it'll do:
 * create a new `sftp` user group,
 * append `sshd_config.add` to `/etc/ssh/sshd_config`.
 
-Every operation will ask for manual confirmation (`y`) first.
+Every operation will ask for manual confirmation (`y`) first,
+so you can skip steps with `n`
+or abort the entire installation process at any time with Ctrl-C.
 
 
 ## Author
