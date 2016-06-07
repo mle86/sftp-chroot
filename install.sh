@@ -38,7 +38,7 @@ ask () {
 	local default="${2:-n}"
 
 	ANSWER=
-	read -p " $ansi_highlight$prompt >$ansi_reset " ANSWER  || true
+	read -p " $ansi_highlight$prompt >$ansi_reset " ANSWER  || fail  # eof, exit with newline
 	[ -n "$ANSWER" ] || ANSWER="$default"
 
 	true
