@@ -54,7 +54,7 @@ is_yes () { [ "$ANSWER" = "y" ] || [ "$ANSWER" = "Y" ] || [ "$ANSWER" = "j" ] ||
 
 ask "Install autofs? [Y/n]" 'y'
 if is_yes; then
-	apt-get update && apt-get install autofs
+	apt-get update && apt-get -y install autofs
 fi
 
 ask "Copy $autofs_cfg to $autofs_dest? [Y/n]" 'y'
