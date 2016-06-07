@@ -3,6 +3,6 @@ Match group sftp
 	# This configuration section is part of the sftp-chroot project – https://github.com/mle86/sftp-chroot/
 	X11Forwarding no
 	AllowTcpForwarding no
-	ChrootDirectory /jails/%u  # see /etc/auto.master.d/jails.autofs
+	ChrootDirectory /jail/%u  # see /etc/auto.master.d/jails.autofs
 	ForceCommand internal-sftp  # see sftp-server(8) for options
 
