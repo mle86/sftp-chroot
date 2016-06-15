@@ -34,14 +34,14 @@ but SCP or rsync won't work.
 
 ## Installation
 
-Run `sudo ./install.sh`.
+Run `sudo `[`./install.sh`](install.sh).
 This is what it will do:
 
 * `apt-get install autofs`,
-* copy `autofs-sftp-jails.sh` to `/etc/`,
-* copy `jails.autofs` to `/etc/auto.master.d/`,
+* copy [`autofs-sftp-jails.sh`](autofs-sftp-jails.sh) to `/etc/`,
+* copy [`jails.autofs`](jails.autofs) to `/etc/auto.master.d/`,
 * create a new `sftp` user group,
-* append `sshd_config.add` to `/etc/ssh/sshd_config`.
+* append [`sshd_config.add`](sshd_config.add) to `/etc/ssh/sshd_config`.
 
 Every operation will ask for manual confirmation (`y`) first,
 so you can skip steps with `n`
