@@ -124,6 +124,6 @@ chown root:root $MOUNT_TO
 #  so the key is the requested directory name therein -- the username.
 # "location" is the device/directory/network resource to mount.
 #  The ":" prefix indicates a local device/directory.
-#          options       key   location
-printf -- '-fstype=bind  "/%s" ":%s"\n'  "$homedir" "$homedir"
+#          key  [options]     location
+printf -- '"/%s" -fstype=bind ":%s"\n'  "$homedir" "$homedir"
 
