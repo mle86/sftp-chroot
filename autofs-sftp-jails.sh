@@ -120,5 +120,10 @@ chown root:root $MOUNT_TO
 # But if we were to emit a "/" mount too (expanding to /jail/$username),
 # it would have to contain an empty $homedir mount point!
 
+# "key" is the relative mountpoint directory. Our base directory is /jail,
+#  so the key is the requested directory name therein -- the username.
+# "location" is the device/directory/network resource to mount.
+#  The ":" prefix indicates a local device/directory.
+#          options       key   location
 printf -- '-fstype=bind  "/%s" ":%s"\n'  "$homedir" "$homedir"
 
