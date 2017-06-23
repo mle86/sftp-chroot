@@ -26,7 +26,7 @@ ansi_info='[1;35m'
 fail () {
 	local status=1
 	if [ -n "$2" ]; then
-		status="$2"
+		status="$1"
 		shift
 	fi
 	echo "$ansi_failure ""$@""$ansi_reset"  >&2
