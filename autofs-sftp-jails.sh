@@ -24,6 +24,8 @@
 
 ## Initialization:  ############################################################
 
+set -e  # die on errors
+
 username="$1"
 
 PROGNAME="$0($username)"
@@ -137,8 +139,8 @@ homedir_symlink_check "$homedir"
 # The /jail directory has to belong to root (or internal-sftp won't chroot).
 # Restrictive modes are essential, or local users might access the jail mountpoints,
 # circumventing the /home/$BASE_USER modes.
-chmod 0700      $MOUNT_TO
-chown root:root $MOUNT_TO
+chmod -- 0700      "$MOUNT_TO"
+chown -- root:root "$MOUNT_TO"
 
 
 ## Perform the mount:  #########################################################
