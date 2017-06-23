@@ -9,6 +9,17 @@
 # 
 # The base directory /jail will only be accessible for root.
 # All mountpoints under /jail are therefore only usable as chroot base directories.
+# 
+# Exit codes:
+#  - 0  Success. Has printed one autofs(5) map entry.
+#  - 1  Argument was not a valid username.
+#  - 2  User exists, but has no homedir entry.
+#  - 3  User's homedir does not exist (or is not a directory).
+#  - 4  User's homedir contains a symlink component.
+#  - 5  User's homedir contains a non-directory component (?!).
+#  - 6  User's homedir has too many components.
+#  - 7  User homedir component could not be resolved.
+#  - 8  User's homedir contains forbidden characters.
 
 
 ## Initialization:  ############################################################
