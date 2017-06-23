@@ -23,6 +23,8 @@ ansi_reset='[0m'
 ansi_info='[1;35m'
 #ansi_success='[1;32m'
 
+# fail [exitStatus=1] errorMessage
+#  Exits the script with an error message and an optional exit status.
 fail () {
 	local status=1
 	if [ -n "$2" ]; then
@@ -33,10 +35,16 @@ fail () {
 	exit $status
 }
 
+# info infoMessage
+#  Prints an informational message on stderr.
 info () {
 	echo "$ansi_info ""$@""$ansi_reset"
 }
 
+# ask prompt [defaultInput=n]
+#  Asks the user for a choice, showing the $prompt and waiting for input.
+#  Defaults to $defaultInput in case of empty input.
+#  Exits with status 1 in case of EOF (Ctrl-D).
 ask () {
 	local prompt="$1"
 	local default="${2:-n}"
