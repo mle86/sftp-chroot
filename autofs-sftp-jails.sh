@@ -62,6 +62,20 @@ remove_trailing_slashes () {
 	printf '%s' "$1" | sed 's:/*$::'
 }
 
+# homedir_name_check homedir
+#  Checks its argument for dangerous characters.
+homedir_name_check () {
+	local homedir="$1"
+	case "$homedir" in
+		*':'*)		fail 8 "homedir with colon rejected: $homedir" ;;
+		*'*'*)		fail 8 "homedir with asterisk rejected: $homedir" ;;
+		*'`'*)		fail 8 "homedir with backtick rejected: $homedir" ;;
+		*'"'*|*"'"*)	fail 8 "homedir with quote rejected: $homedir" ;;
+		*"\\")		fail 8 "homedir with backslash rejected: $homedir" ;;
+	esac
+	true
+}
+
 # homedir_symlink_check homedir
 #  Checks that its argument's path components do not contain any symlinks
 #  and are all existing, real directories.
@@ -90,6 +104,13 @@ homedir_symlink_check () {
 
 homedir="$(user_homedir "$username")"
 # Now we know that the user exists and has an existing homedir.
+
+# Make sure that the homedir does not contain any dangerous characters.
+# In theory, they should not be a real problem,
+# but we'd have to escape them in our final output.
+# Since special characters in homedir names are really uncommon,
+# we'll just reject them altogether:
+homedir_name_check "$homedir"
 
 # None of the homedir components can be a symlink!
 # Otherwise the main account could remove the sub account's homedir

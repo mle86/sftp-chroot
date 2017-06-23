@@ -1,4 +1,5 @@
 next (June 2017)
+	- added more security checks (safe homedir names)
 	- fixed minor security issues (printf)
 
 v1.0.1 (June 2016)
