@@ -1,4 +1,4 @@
-next (June 2017)
+v1.0.2 (June 2017)
 	- added more security checks (safe homedir names, errexit)
 	- fixed minor security issues (printf)
 
