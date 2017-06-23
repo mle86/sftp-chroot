@@ -31,14 +31,14 @@ fail () {
 		status="$1"
 		shift
 	fi
-	echo "$ansi_failure ""$@""$ansi_reset"  >&2
+	printf '%s%s%s\n' "$ansi_failure" "$*" "$ansi_reset"  >&2
 	exit $status
 }
 
 # info infoMessage
 #  Prints an informational message on stderr.
 info () {
-	echo "$ansi_info ""$@""$ansi_reset"
+	printf '%s%s%s\n' "$ansi_info" "$*" "$ansi_reset"  >&2
 }
 
 # ask prompt [defaultInput=n]
