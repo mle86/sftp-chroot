@@ -31,7 +31,7 @@ fail () {
 		shift
 	fi
 
-	echo "${PROGNAME:-$0}: ""$@"  >&2
+	printf '%s: %s\n' "${PROGNAME:-$0}" "$*"  >&2
 	exit $status
 }
 
@@ -48,18 +48,18 @@ user_homedir () {
 	local uent=
 	uent="$(getent passwd -- "$username")"  || fail 1 "user not found"
 
-	local homedir="$(echo "$uent" | cut -d':' -f6)"
+	local homedir="$(printf '%s' "$uent" | cut -d':' -f6)"
 	[ -n "$homedir" ]  || fail 2 "no homedir entry"
 	[ -d "$homedir" ]  || fail 3 "homedir not found: $homedir"
 
-	echo "$homedir"
+	printf '%s\n' "$homedir"
 }
 
 # remove_trailing_slashes string
 #  Removes any trailing slashes in the string, if there are any,
 #  and prints the result.
 remove_trailing_slashes () {
-	echo "$1" | sed 's:/*$::'
+	printf '%s' "$1" | sed 's:/*$::'
 }
 
 # homedir_symlink_check homedir
@@ -120,5 +120,5 @@ chown root:root $MOUNT_TO
 # But if we were to emit a "/" mount too (expanding to /jail/$username),
 # it would have to contain an empty $homedir mount point!
 
-echo "-fstype=bind  \"/$homedir\" \":$homedir\""
+printf -- '-fstype=bind  "/%s" ":%s"\n'  "$homedir" "$homedir"
 

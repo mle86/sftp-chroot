@@ -1,3 +1,6 @@
+next (June 2017)
+	- fixed minor security issues (printf)
+
 v1.0.1 (June 2016)
 	- fixed sshd_config
 	- improved readme doc
